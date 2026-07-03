@@ -125,7 +125,10 @@ module.exports = async function handler(req, res) {
   const emails = new Set();
   const phones = new Set();
   for (const p of pages) {
-    for (const m of p.html.matchAll(/mailto:([^"'?<>\s]+)/gi)) emails.add(decodeURIComponent(m[1]).toLowerCase());
+    for (const m of p.html.matchAll(/mailto:([^"'?<>\s]+)/gi)) {
+      const mail = decodeURIComponent(m[1]).toLowerCase();
+      if (/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(mail)) emails.add(mail);
+    }
     for (const m of p.html.matchAll(/tel:([+\d][\d\s().\/-]{6,20})/gi)) phones.add(m[1].trim());
     const text = stripHtml(p.html);
     for (const m of text.matchAll(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g)) {

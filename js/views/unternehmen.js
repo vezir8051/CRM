@@ -52,7 +52,41 @@
   }
 
   /* ---------- Modal: Unternehmen erfassen/bearbeiten ---------- */
-  function openCompanyModal(firma, onSaved) {
+  /* KI-Import: Firmenformular vorbefüllen, Fehlendes rot markieren */
+  function applyCompanyImport(modalEl, form, imp) {
+    const d = imp.data || {};
+    ['name', 'branche', 'strasse', 'plz', 'ort', 'telefon', 'email', 'website', 'notizen'].forEach(k => {
+      if (form.elements[k] && d[k]) form.elements[k].value = d[k];
+    });
+
+    const body = modalEl.querySelector('.modal-body');
+    const banner = document.createElement('div');
+    banner.className = 'import-banner';
+    const apInfo = (imp.ansprechpartner && imp.ansprechpartner.length)
+      ? ` ${imp.ansprechpartner.length} Ansprechpartner werden mit angelegt.` : '';
+    banner.innerHTML = `${ui.icon('sparkles', 16)}<div><strong>Webseite ausgewertet</strong> ${imp.quelle === 'ki' ? 'per KI (Claude)' : 'per lokaler Texterkennung'}.
+      Rot markierte Felder konnten nicht von der Webseite gelesen werden – bitte prüfen und ergänzen.${apInfo}</div>`;
+    body.insertBefore(banner, body.firstChild);
+
+    (imp.missing || []).forEach(name => {
+      const input = form.elements[name];
+      if (!input || !input.closest) return;
+      const field = input.closest('.field');
+      if (!field) return;
+      field.classList.add('field-missing');
+      const hint = document.createElement('div');
+      hint.className = 'missing-hint';
+      hint.innerHTML = `${ui.icon('alert', 12)} Nicht auf der Webseite gefunden`;
+      field.appendChild(hint);
+      const clear = () => {
+        if (String(input.value).trim()) { field.classList.remove('field-missing'); hint.remove(); }
+      };
+      input.addEventListener('input', clear);
+      input.addEventListener('change', clear);
+    });
+  }
+
+  function openCompanyModal(firma, onSaved, importResult) {
     const f = firma || null;
     const cur = App.auth.currentUser();
     const betreuer = f ? f.betreuerId : (cur ? cur.id : 1);
@@ -97,6 +131,7 @@
         <button class="btn btn-primary" data-action="save" type="button">${f ? 'Speichern' : 'Erstellen'}</button>`,
       onMount(el, close) {
         const form = el.querySelector('#firma-form');
+        if (importResult) applyCompanyImport(el, form, importResult);
         el.querySelector('[data-action="cancel"]').addEventListener('click', close);
         el.querySelector('[data-action="save"]').addEventListener('click', () => {
           if (!form.reportValidity()) return;
@@ -123,6 +158,14 @@
           } else {
             rec.nr = db.nextNr('F');
             rec.ansprechpartner = [];
+            if (importResult && Array.isArray(importResult.ansprechpartner)) {
+              rec.ansprechpartner = importResult.ansprechpartner.map((p, i) => ({
+                id: i + 1,
+                anrede: ['Herr', 'Frau'].includes(p.anrede) ? p.anrede : '',
+                vorname: p.vorname || '', nachname: p.nachname || '',
+                funktion: p.funktion || '', email: p.email || '', telefon: p.telefon || ''
+              }));
+            }
             saved = db.insert('companies', rec);
             ui.toast('Unternehmen erstellt');
           }
@@ -193,6 +236,75 @@
     });
   }
 
+  /* ---------- KI: Import von Webseite ---------- */
+  function openWebImportModal(onSaved) {
+    ui.modal({
+      title: 'Unternehmen von Webseite importieren',
+      width: 560,
+      content: `
+        <div class="import-banner">${ui.icon('sparkles', 16)}<div>
+          Webseiten-Link eingeben – das CRM liest die Seite (inkl. Kontakt/Impressum) und übernimmt
+          Firmenname, Adresse, E-Mail, Telefon &amp; Co. automatisch.
+          ${App.ai.hasKey()
+            ? 'Die Auswertung erfolgt per <strong>KI (Claude)</strong>, inkl. Ansprechpartnern.'
+            : 'Ohne KI-Schlüssel wird die <strong>lokale Texterkennung</strong> verwendet (<a href="#/einstellungen">Einstellungen → KI</a>).'}
+        </div></div>
+        <div class="field">
+          <label>Webseite *</label>
+          <input type="text" id="web-url" placeholder="z.B. www.beispielfirma.ch" autocomplete="off">
+        </div>
+        <div class="field" id="web-fallback" style="display:none">
+          <label>Seiteninhalt manuell einfügen</label>
+          <textarea id="web-text" style="min-height:130px" placeholder="Text oder HTML der Webseite (z.B. der Kontakt-/Impressumsseite) hier einfügen…"></textarea>
+          <div class="hint">Der automatische Abruf ist hier nicht verfügbar – Inhalt der Webseite kopieren und einfügen.</div>
+        </div>
+        <div id="web-status" class="mt-10" style="display:none"></div>`,
+      footer: `
+        <button class="btn btn-secondary" data-action="cancel" type="button">Abbrechen</button>
+        <button class="btn btn-primary" data-action="analyze" type="button">${ui.icon('sparkles', 15)} Webseite analysieren</button>`,
+      onMount(el, close) {
+        const urlInput = el.querySelector('#web-url');
+        const status = el.querySelector('#web-status');
+        const fallback = el.querySelector('#web-fallback');
+        const analyzeBtn = el.querySelector('[data-action="analyze"]');
+        el.querySelector('[data-action="cancel"]').addEventListener('click', close);
+
+        function zeigeStatus(html) { status.style.display = ''; status.innerHTML = html; }
+
+        analyzeBtn.addEventListener('click', async () => {
+          const url = urlInput.value.trim();
+          if (!url) { ui.toast('Bitte eine Webseiten-Adresse eingeben.', 'error'); return; }
+          analyzeBtn.disabled = true;
+          zeigeStatus(`<span class="ai-spinner"></span> <span class="text-muted" style="margin-left:8px">Webseite wird gelesen und ausgewertet…</span>`);
+          try {
+            let site;
+            const manuell = el.querySelector('#web-text').value.trim();
+            if (fallback.style.display !== 'none' && manuell.length > 40) {
+              // Fallback: eingefügter Seiteninhalt statt Serverless-Abruf
+              // Markup entfernen, Zeilenumbrüche für die Texterkennung erhalten
+              const text = manuell.replace(/<[^>]+>/g, ' ').replace(/[ \t]{2,}/g, ' ');
+              site = { url: /^https?:\/\//i.test(url) ? url : 'https://' + url, title: '', description: '', siteName: '', emails: [], phones: [], pages: [{ url, text }] };
+            } else {
+              site = await App.ai.fetchWebsite(url);
+            }
+            const result = await App.ai.extractCompany(site);
+            close();
+            ui.toast(result.quelle === 'ki' ? 'Webseite per KI ausgewertet' : 'Webseite per Texterkennung ausgewertet');
+            openCompanyModal(null, onSaved, result);
+          } catch (err) {
+            analyzeBtn.disabled = false;
+            if (err.code === 'not_deployed') {
+              fallback.style.display = '';
+              zeigeStatus(`<span class="text-danger fs-12">${ui.esc(err.message)}</span>`);
+            } else {
+              zeigeStatus(`<span class="text-danger fs-12">${ui.esc(err.message)}</span>`);
+            }
+          }
+        });
+      }
+    });
+  }
+
   /* ---------- Liste ---------- */
   function renderList(container, openNew) {
     let suche = '', statusFilter = '', sortKey = 'name', sortDir = 1;
@@ -204,6 +316,7 @@
           <div class="subtitle" id="u-subtitle"></div>
         </div>
         <div class="actions">
+          <button class="btn btn-secondary" id="u-import">${ui.icon('link', 16)} Von Webseite importieren</button>
           <button class="btn btn-primary" id="u-new">${ui.icon('plus', 16)} Neues Unternehmen</button>
         </div>
       </div>
@@ -306,6 +419,9 @@
 
     container.querySelector('#u-new').addEventListener('click', () => {
       openCompanyModal(null, (rec) => App.navigate('/unternehmen/' + rec.id));
+    });
+    container.querySelector('#u-import').addEventListener('click', () => {
+      openWebImportModal((rec) => App.navigate('/unternehmen/' + rec.id));
     });
     container.querySelector('#u-search').addEventListener('input', (e) => { suche = e.target.value; renderTable(); });
     container.querySelector('#u-status').addEventListener('change', (e) => { statusFilter = e.target.value; renderTable(); });

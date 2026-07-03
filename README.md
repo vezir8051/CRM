@@ -27,6 +27,24 @@ Dashboard, Kandidaten- und Kundenverwaltung, Vakanzen, Vermittlungs-Pipeline, Au
 Weitere Querschnittsfunktionen: globale Suche (Kandidaten/Firmen/Vakanzen), Schnellerfassung
 («+ Neu»), Navigations-Badges für offene Vakanzen und fällige Aufgaben, responsives Layout.
 
+## KI-Automatisierung
+
+| Funktion | Beschreibung |
+|---|---|
+| **Lebenslauf-Import** | PDF/Text hochladen oder einfügen (Kandidaten → «Lebenslauf-Import») – das CRM füllt das Kandidatenformular automatisch aus. **Felder, die nicht aus dem Lebenslauf gelesen werden konnten, werden rot markiert.** Der Lebenslauf wird zugleich als Dokument am Kandidaten abgelegt. |
+| **Webseiten-Import** | Firmen-URL eingeben (Unternehmen → «Von Webseite importieren») – das CRM liest die Seite inkl. Kontakt-/Impressumsseiten und übernimmt Name, Adresse, E-Mail, Telefon, Branche und (mit KI) sogar Ansprechpartner. |
+| **Auto-Nachfassen** | Bei jedem Phasenwechsel einer Vermittlung wird automatisch eine «Nachfassen»-Aufgabe (+3 Tage) erstellt (abschaltbar unter Einstellungen → KI). |
+| **Duplikaterkennung** | Beim Erfassen von Kandidaten warnt das CRM automatisch bei gleicher E-Mail oder gleichem Namen. |
+
+**Zwei Betriebsarten:**
+
+1. **Ohne KI-Schlüssel** (Standard): lokale Texterkennung per Heuristik – funktioniert offline, erkennt E-Mail, Telefon, Adresse, Geburtsdatum, Skills, Sprachen usw.
+2. **Mit Anthropic-API-Schlüssel** (Einstellungen → KI): Auswertung per Claude (`claude-opus-4-8`, umschaltbar auf `claude-haiku-4-5`) mit garantiert strukturiertem Ergebnis – deutlich genauer, inkl. Ansprechpartner-Erkennung. Der Schlüssel bleibt lokal im Browser (nicht im JSON-Export) und wird ausschliesslich an `api.anthropic.com` gesendet.
+
+Der Webseiten-Abruf läuft über die Serverless-Funktion `api/scrape.js` (aktiv im Vercel-Deployment,
+mit SSRF-Schutz und Grössenlimits). Ohne Deployment bietet die App einen Einfüge-Fallback an.
+PDF-Texte werden clientseitig via pdf.js (CDN) extrahiert.
+
 ## Schnellstart
 
 Die Anwendung ist eine reine Client-Anwendung (Single-Page-App) **ohne Build-Schritt und ohne
@@ -67,6 +85,7 @@ Demo-Daten jederzeit zurücksetzen oder als JSON exportieren/importieren.
 ```
 ├── index.html            # App-Shell (Script-Ladereihenfolge)
 ├── index.php             # PHP-Wrapper (optional, analog zum Vorbild)
+├── api/scrape.js         # Vercel-Serverless: Webseiten-Abruf für den Firmen-Import
 ├── css/app.css           # Design-System
 └── js/
     ├── app.js            # Shell: Sidebar, Topbar, globale Suche, «+ Neu»

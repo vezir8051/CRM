@@ -277,6 +277,94 @@
     });
   }
 
+  /* ---------- Tab: KI ---------- */
+  function renderKi(panel) {
+    const s = db.settings();
+    const autoFollowup = s.autoFollowup !== false;
+    panel.innerHTML = `
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h3>${ui.icon('sparkles', 16)} KI-Anbindung (Claude API)</h3></div>
+          <div class="card-body">
+            <p class="text-muted mb-20" style="font-size:13px">
+              Mit einem eigenen Anthropic-API-Schlüssel werten Lebenslauf- und Webseiten-Import per KI aus –
+              deutlich genauer als die eingebaute Texterkennung. Der Schlüssel wird nur lokal in Ihrem Browser
+              gespeichert (nicht im Datenexport enthalten) und ausschliesslich an <code>api.anthropic.com</code> gesendet.
+            </p>
+            <form id="ki-form">
+              <div class="field">
+                <label>Anthropic API-Schlüssel</label>
+                <input type="password" name="apiKey" value="${ui.esc(App.ai.getKey())}" placeholder="sk-ant-…" autocomplete="off">
+                <div class="hint">Erhältlich unter platform.claude.com – ohne Schlüssel wird die lokale Texterkennung genutzt.</div>
+              </div>
+              <div class="field">
+                <label>Modell</label>
+                <select name="model">
+                  ${App.ai.MODELS.map(m => `<option value="${ui.esc(m.id)}" ${App.ai.getModel() === m.id ? 'selected' : ''}>${ui.esc(m.label)}</option>`).join('')}
+                </select>
+              </div>
+              <div class="flex" style="gap:8px">
+                <button class="btn btn-primary" type="submit">${ui.icon('check', 16)} Speichern</button>
+                <button class="btn btn-secondary" type="button" data-act="test">${ui.icon('refresh', 16)} Verbindung testen</button>
+                <span id="ki-test-result" class="fs-12"></span>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>Automatisierung</h3></div>
+          <div class="card-body">
+            <div class="checkbox-row mb-10">
+              <input type="checkbox" id="ki-followup" ${autoFollowup ? 'checked' : ''}>
+              <label for="ki-followup">Automatische Nachfass-Aufgaben</label>
+            </div>
+            <p class="text-muted" style="font-size:13px">
+              Erstellt bei jedem Phasenwechsel einer Vermittlung (Vorgeschlagen, Interview, Angebot)
+              automatisch eine Aufgabe «Nachfassen» mit Fälligkeit in 3 Tagen – damit kein Kandidat
+              und kein Kunde vergessen geht.
+            </p>
+            <hr class="divider">
+            <p class="text-muted" style="font-size:13px">
+              <strong>Weitere eingebaute Automatisierungen:</strong><br>
+              • Duplikaterkennung beim Erfassen von Kandidaten (E-Mail/Name)<br>
+              • Statuspflege: Abschluss «Vermittelt» setzt Kandidat und Vakanz automatisch nach<br>
+              • Kandidaten-Matching mit Skill-Score in jeder Vakanz
+            </p>
+          </div>
+        </div>
+      </div>`;
+
+    panel.querySelector('#ki-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      App.ai.setKey(String(fd.get('apiKey') || ''));
+      App.ai.setModel(String(fd.get('model') || App.ai.DEFAULT_MODEL));
+      ui.toast('KI-Einstellungen gespeichert');
+    });
+
+    panel.querySelector('[data-act="test"]').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const out = panel.querySelector('#ki-test-result');
+      // Zuerst aktuelle Eingaben übernehmen, damit der Test das Richtige prüft
+      const form = panel.querySelector('#ki-form');
+      App.ai.setKey(form.elements.apiKey.value);
+      App.ai.setModel(form.elements.model.value);
+      if (!App.ai.hasKey()) { out.innerHTML = '<span class="text-danger">Kein Schlüssel eingetragen.</span>'; return; }
+      btn.disabled = true;
+      out.innerHTML = '<span class="ai-spinner"></span>';
+      const res = await App.ai.testKey();
+      btn.disabled = false;
+      out.innerHTML = res.ok
+        ? `<span class="text-success fw-600">${ui.esc(res.message)}</span>`
+        : `<span class="text-danger">${ui.esc(res.message)}</span>`;
+    });
+
+    panel.querySelector('#ki-followup').addEventListener('change', (e) => {
+      db.settings({ autoFollowup: e.target.checked });
+      ui.toast(e.target.checked ? 'Automatische Nachfass-Aufgaben aktiviert' : 'Automatische Nachfass-Aufgaben deaktiviert');
+    });
+  }
+
   /* ---------- Tab: Daten ---------- */
   function renderDaten(panel, rerenderAll) {
     const counts = [
@@ -389,11 +477,13 @@
           <button class="tab active" data-tab="profil" type="button">Profil</button>
           <button class="tab" data-tab="benutzer" type="button">Benutzer</button>
           <button class="tab" data-tab="firma" type="button">Firma</button>
+          <button class="tab" data-tab="ki" type="button">KI ${ui.icon('sparkles', 13)}</button>
           <button class="tab" data-tab="daten" type="button">Daten</button>
         </div>
         <div class="tab-panel active" data-panel="profil"></div>
         <div class="tab-panel" data-panel="benutzer"></div>
         <div class="tab-panel" data-panel="firma"></div>
+        <div class="tab-panel" data-panel="ki"></div>
         <div class="tab-panel" data-panel="daten"></div>
         <div class="card mt-20">
           <div class="card-body" style="text-align:center">
@@ -405,6 +495,7 @@
         profil: container.querySelector('[data-panel="profil"]'),
         benutzer: container.querySelector('[data-panel="benutzer"]'),
         firma: container.querySelector('[data-panel="firma"]'),
+        ki: container.querySelector('[data-panel="ki"]'),
         daten: container.querySelector('[data-panel="daten"]')
       };
 
@@ -414,6 +505,7 @@
         renderProfil(panels.profil, rerenderAll);
         renderBenutzer(panels.benutzer, rerenderAll);
         renderFirma(panels.firma, rerenderAll);
+        renderKi(panels.ki);
         renderDaten(panels.daten, rerenderAll);
       }
 

@@ -53,8 +53,61 @@
     });
   }
 
+  /* ---------- KI-Import: Formular vorbefüllen, Fehlendes rot markieren ---------- */
+  function applyImport(modalEl, form, imp) {
+    const d = imp.data || {};
+    const setVal = (name, v) => {
+      if (form.elements[name] && v !== undefined && v !== null && v !== '' && v !== 0) form.elements[name].value = v;
+    };
+    ['anrede', 'vorname', 'nachname', 'geburtsdatum', 'email', 'telefon', 'strasse', 'plz', 'ort',
+      'beruf', 'ausbildung', 'verfuegbarAb', 'pensum', 'anstellungsart', 'berufserfahrung', 'lohnvorstellung']
+      .forEach(k => setVal(k, d[k]));
+    if (Array.isArray(d.qualifikationen) && d.qualifikationen.length) {
+      form.elements.qualifikationen.value = d.qualifikationen.join(', ');
+    }
+    if (Array.isArray(d.sprachen) && d.sprachen.length) {
+      form.elements.sprachen.value = d.sprachen.map(s => s.niveau ? `${s.sprache}: ${s.niveau}` : s.sprache).join(', ');
+    }
+
+    const body = modalEl.querySelector('.modal-body');
+    const banner = document.createElement('div');
+    banner.className = 'import-banner';
+    banner.innerHTML = `${ui.icon('sparkles', 16)}<div><strong>Lebenslauf ausgewertet</strong> ${imp.quelle === 'ki' ? 'per KI (Claude)' : 'per lokaler Texterkennung'}.
+      Rot markierte Felder konnten nicht aus dem Lebenslauf gelesen werden – bitte prüfen und ergänzen.</div>`;
+    body.insertBefore(banner, body.firstChild);
+
+    (imp.missing || []).forEach(name => {
+      const input = form.elements[name];
+      if (!input || !input.closest) return;
+      const field = input.closest('.field');
+      if (!field) return;
+      field.classList.add('field-missing');
+      const hint = document.createElement('div');
+      hint.className = 'missing-hint';
+      hint.innerHTML = `${ui.icon('alert', 12)} Nicht aus dem Lebenslauf erkannt`;
+      field.appendChild(hint);
+      const clear = () => {
+        if (String(input.value).trim()) { field.classList.remove('field-missing'); hint.remove(); }
+      };
+      input.addEventListener('input', clear);
+      input.addEventListener('change', clear);
+    });
+  }
+
+  function showDupBanner(modalEl, dup) {
+    const body = modalEl.querySelector('.modal-body');
+    const alt = body.querySelector('.import-banner.warn');
+    if (alt) alt.remove();
+    const banner = document.createElement('div');
+    banner.className = 'import-banner warn';
+    banner.innerHTML = `${ui.icon('alert', 16)}<div><strong>Mögliches Duplikat:</strong> ${ui.esc(fullName(dup))} (${ui.esc(dup.nr)}) ist bereits erfasst.
+      Erneut auf «Erstellen» klicken, um trotzdem zu speichern.</div>`;
+    body.insertBefore(banner, body.firstChild);
+    body.scrollTop = 0;
+  }
+
   /* ---------- Erfassen / Bearbeiten ---------- */
-  function openCandidateModal(candidate, onSaved) {
+  function openCandidateModal(candidate, onSaved, importResult) {
     const c = candidate || null;
     const users = db.list('users');
     const cur = App.auth.currentUser();
@@ -111,6 +164,7 @@
         <button class="btn btn-primary" data-action="save" type="button">${c ? 'Speichern' : 'Erstellen'}</button>`,
       onMount(el, close) {
         const form = el.querySelector('#candidate-form');
+        if (importResult) applyImport(el, form, importResult);
         el.querySelector('[data-action="cancel"]').addEventListener('click', close);
         el.querySelector('[data-action="save"]').addEventListener('click', () => {
           if (!form.reportValidity()) return;
@@ -145,13 +199,94 @@
             id = c.id;
             ui.toast('Kandidat aktualisiert');
           } else {
+            // Automatische Duplikaterkennung (E-Mail oder identischer Name)
+            const dup = db.list('candidates').find(x =>
+              (rec.email && x.email && x.email.toLowerCase() === rec.email.toLowerCase()) ||
+              `${x.vorname} ${x.nachname}`.toLowerCase() === `${rec.vorname} ${rec.nachname}`.toLowerCase());
+            if (dup && !form.dataset.dupOk) {
+              form.dataset.dupOk = '1';
+              showDupBanner(el, dup);
+              return;
+            }
             rec.nr = db.nextNr('K');
             rec.dokumente = [];
+            if (importResult && importResult.dokumentName) {
+              rec.dokumente.push({ id: 1, name: importResult.dokumentName, typ: 'Lebenslauf', datum: ui.today() });
+            }
             id = db.insert('candidates', rec).id;
             ui.toast('Kandidat erstellt');
           }
           close();
           if (onSaved) onSaved(id);
+        });
+      }
+    });
+  }
+
+  /* ---------- KI: Lebenslauf-Import ---------- */
+  function openCvImportModal(onSaved) {
+    let file = null;
+    ui.modal({
+      title: 'Lebenslauf importieren',
+      width: 560,
+      content: `
+        <div class="import-banner">${ui.icon('sparkles', 16)}<div>
+          ${App.ai.hasKey()
+            ? 'Die Auswertung erfolgt per <strong>KI (Claude)</strong>.'
+            : 'Kein KI-Schlüssel hinterlegt – es wird die <strong>lokale Texterkennung</strong> verwendet. Bessere Resultate mit API-Schlüssel unter <a href="#/einstellungen">Einstellungen → KI</a>.'}
+          Erkannte Angaben werden ins Formular übernommen, nicht Lesbares wird rot markiert.
+        </div></div>
+        <div class="dropzone" id="cv-drop">
+          <div class="dz-icon">${ui.icon('upload', 26)}</div>
+          <div><strong>PDF- oder Textdatei</strong> hierhin ziehen oder klicken</div>
+          <div class="dz-file" id="cv-filename"></div>
+          <input type="file" id="cv-file" accept=".pdf,.txt,.md,text/plain,application/pdf" style="display:none">
+        </div>
+        <div class="divider"></div>
+        <div class="field mb-0">
+          <label>… oder Lebenslauf-Text direkt einfügen</label>
+          <textarea id="cv-text" style="min-height:130px" placeholder="Text des Lebenslaufs hier einfügen…"></textarea>
+        </div>
+        <div id="cv-status" class="mt-10" style="display:none"></div>`,
+      footer: `
+        <button class="btn btn-secondary" data-action="cancel" type="button">Abbrechen</button>
+        <button class="btn btn-primary" data-action="analyze" type="button">${ui.icon('sparkles', 15)} Analysieren</button>`,
+      onMount(el, close) {
+        const drop = el.querySelector('#cv-drop');
+        const fileInput = el.querySelector('#cv-file');
+        const nameEl = el.querySelector('#cv-filename');
+        const status = el.querySelector('#cv-status');
+        const analyzeBtn = el.querySelector('[data-action="analyze"]');
+
+        function setFile(f) { file = f; nameEl.textContent = f ? f.name : ''; }
+        drop.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => setFile(fileInput.files[0] || null));
+        drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('drag-over'); });
+        drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+        drop.addEventListener('drop', (e) => {
+          e.preventDefault();
+          drop.classList.remove('drag-over');
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+        });
+        el.querySelector('[data-action="cancel"]').addEventListener('click', close);
+
+        analyzeBtn.addEventListener('click', async () => {
+          const pasted = el.querySelector('#cv-text').value.trim();
+          if (!file && pasted.length < 30) { ui.toast('Bitte Datei wählen oder Text einfügen.', 'error'); return; }
+          analyzeBtn.disabled = true;
+          status.style.display = '';
+          status.innerHTML = `<span class="ai-spinner"></span> <span class="text-muted" style="margin-left:8px">Lebenslauf wird ausgewertet…</span>`;
+          try {
+            const text = (!file && pasted.length >= 30) ? pasted : await App.ai.readFile(file);
+            const result = await App.ai.extractCandidate(text);
+            result.dokumentName = file ? file.name : null;
+            close();
+            ui.toast(result.quelle === 'ki' ? 'Lebenslauf per KI ausgewertet' : 'Lebenslauf per Texterkennung ausgewertet');
+            openCandidateModal(null, onSaved, result);
+          } catch (err) {
+            analyzeBtn.disabled = false;
+            status.innerHTML = `<span class="text-danger fs-12">${ui.esc(err.message)}</span>`;
+          }
         });
       }
     });
@@ -170,6 +305,7 @@
           <div class="subtitle"></div>
         </div>
         <div class="actions">
+          <button class="btn btn-secondary" id="btn-import">${ui.icon('sparkles', 16)} Lebenslauf-Import</button>
           <button class="btn btn-primary" id="btn-new">${ui.icon('plus', 16)} Neuer Kandidat</button>
         </div>
       </div>
@@ -285,6 +421,8 @@
     container.querySelector('#kand-betreuer').addEventListener('change', (e) => { betreuerFilter = e.target.value; renderTable(); });
     container.querySelector('#btn-new').addEventListener('click', () =>
       openCandidateModal(null, (id) => App.navigate('/kandidaten/' + id)));
+    container.querySelector('#btn-import').addEventListener('click', () =>
+      openCvImportModal((id) => App.navigate('/kandidaten/' + id)));
 
     renderTable();
     if (openNew) openCandidateModal(null, (id) => App.navigate('/kandidaten/' + id));

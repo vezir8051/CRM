@@ -545,12 +545,13 @@
 
       /* Matching: direkt vorschlagen */
       container.querySelectorAll('[data-match-id]').forEach(btn => btn.addEventListener('click', () => {
-        db.insert('placements', {
+        const rec = db.insert('placements', {
           candidateId: Number(btn.dataset.matchId), vacancyId: id,
           phase: 'Vorgeschlagen', honorar: null, startdatum: null, notiz: '',
           verlauf: [{ datum: ui.nowLocal(), phase: 'Vorgeschlagen', notiz: 'Via Matching vorgeschlagen.' }]
         });
         ui.toast('Kandidat vorgeschlagen');
+        shared.autoFollowUp(rec, 'Vorgeschlagen');
         draw();
       }));
 

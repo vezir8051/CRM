@@ -338,6 +338,7 @@ App.shared = (() => {
               verlauf: [{ datum: _ui.nowLocal(), phase: 'Vorgeschlagen', notiz: notiz || 'Kandidat vorgeschlagen.' }]
             });
             if (phase !== 'Vorgeschlagen') changePhase(rec.id, phase, 'Initiale Phase gesetzt.');
+            else autoFollowUp(rec, 'Vorgeschlagen');
             _ui.toast('Vermittlung erstellt');
           }
           close();
@@ -345,6 +346,38 @@ App.shared = (() => {
         });
       }
     });
+  }
+
+  /* Automatisierung: Nachfass-Aufgabe (+3 Tage) bei aktiven Phasen anlegen,
+     sofern in den Einstellungen aktiviert und noch keine offene existiert. */
+  function autoFollowUp(placement, phase) {
+    if (db().settings().autoFollowup === false) return;
+    if (!['Vorgeschlagen', 'Interview', 'Angebot'].includes(phase)) return;
+    const kandidat = db().get('candidates', placement.candidateId);
+    const vak = db().get('vacancies', placement.vacancyId);
+    const firma = vak ? db().get('companies', vak.companyId) : null;
+    if (!kandidat) return;
+    const betreff = `Nachfassen: ${candidateName(kandidat)}${firma ? ' bei ' + firma.name : ''} (${phase})`;
+    // Keine doppelten offenen Nachfass-Aufgaben für denselben Kandidaten
+    const offen = db().list('activities').some(a =>
+      !a.erledigt && a.bezug && a.bezug.typ === 'kandidat' &&
+      Number(a.bezug.id) === placement.candidateId && String(a.betreff).startsWith('Nachfassen:'));
+    if (offen) return;
+    const faellig = new Date();
+    faellig.setDate(faellig.getDate() + 3);
+    faellig.setHours(9, 0, 0, 0);
+    const p2 = (x) => String(x).padStart(2, '0');
+    const iso = `${faellig.getFullYear()}-${p2(faellig.getMonth() + 1)}-${p2(faellig.getDate())}T09:00`;
+    const user = App.auth.currentUser();
+    db().insert('activities', {
+      typ: 'Aufgabe', betreff,
+      beschreibung: `Automatisch erstellt beim Phasenwechsel zu «${phase}».`,
+      faelligAm: iso, erledigt: false,
+      bezug: { typ: 'kandidat', id: placement.candidateId },
+      userId: user ? user.id : 1
+    });
+    ui().toast('Nachfass-Aufgabe in 3 Tagen erstellt', 'info');
+    if (App.updateNavBadges) App.updateNavBadges();
   }
 
   function changePhase(placementId, phase, notiz) {
@@ -358,6 +391,7 @@ App.shared = (() => {
       db().update('candidates', p.candidateId, { status: 'Vermittelt' });
       db().update('vacancies', p.vacancyId, { status: 'Besetzt' });
     }
+    autoFollowUp(p, phase);
     return db().get('placements', placementId);
   }
 
@@ -366,6 +400,6 @@ App.shared = (() => {
     candidateName, bezugInfo,
     matchScore, matchBar,
     openActivityModal, activityTimeline, activityIcon,
-    openPlacementModal, changePhase
+    openPlacementModal, changePhase, autoFollowUp
   };
 })();

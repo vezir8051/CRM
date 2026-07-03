@@ -27,6 +27,8 @@ App.router = (() => {
   }
 
   function resolve() {
+    // Offene Modals schliessen (überleben sonst den Routenwechsel)
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
     // Nicht eingeloggt → immer Login anzeigen
     if (!App.auth.isLoggedIn()) {
       current = 'login';

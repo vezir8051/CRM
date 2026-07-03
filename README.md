@@ -4,7 +4,11 @@ Ein vollständiges, deutschsprachiges CRM-System für Personalvermittlung und Re
 inspiriert von branchenüblichen Personaldienstleister-Lösungen (Login-Maske, Hash-Routing `#/`,
 Dashboard, Kandidaten- und Kundenverwaltung, Vakanzen, Vermittlungs-Pipeline, Auswertungen).
 
-![Login](docs/screenshots/00-login.png)
+| | |
+|---|---|
+| ![Login](docs/screenshots/00-login.png) | ![Dashboard](docs/screenshots/dashboard.png) |
+| ![Kanban](docs/screenshots/vermittlungen.png) | ![Matching](docs/screenshots/matching.png) |
+| ![Kandidat](docs/screenshots/kandidat-detail.png) | ![Berichte](docs/screenshots/berichte.png) |
 
 ## Funktionen
 

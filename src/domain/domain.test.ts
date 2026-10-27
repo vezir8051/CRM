@@ -1,3 +1,4 @@
+import { isQrIban, isValidIban, qrBillPayload, splitStreet } from './qrbill';
 import { describe, expect, it } from 'vitest';
 import { addDays, daysBetween, fmtCHF, fmtDate, fmtRelative, isoWeek, round05, startOfWeek, weekLabel } from './format';
 import { calcMargin, calcTariff, DEFAULT_TARIFF_RATES } from './tarif';
@@ -202,5 +203,36 @@ describe('Demo-Daten', () => {
       if (t.status === 'Verrechnet') expect(inv.has(t.invoiceId)).toBe(true);
     });
     expect(s.invoices.length).toBeGreaterThan(3);
+  });
+});
+
+describe('QR-Rechnung', () => {
+  it('prüft IBAN-Prüfsummen und erkennt QR-IBAN', () => {
+    expect(isValidIban('CH93 0076 2011 6238 5295 7')).toBe(true);
+    expect(isValidIban('CH93 0076 2011 6238 5295 8')).toBe(false);
+    expect(isQrIban('CH44 3199 9123 0008 8901 2')).toBe(true);
+    expect(isQrIban('CH93 0076 2011 6238 5295 7')).toBe(false);
+  });
+
+  it('trennt Hausnummern ab', () => {
+    expect(splitStreet('Bahnhofstrasse 12a')).toEqual(['Bahnhofstrasse', '12a']);
+    expect(splitStreet('Postfach')).toEqual(['Postfach', '']);
+  });
+
+  it('erzeugt 31 Datenelemente im SPC-Format', () => {
+    const payload = qrBillPayload({
+      iban: 'CH93 0076 2011 6238 5295 7',
+      creditor: { name: 'PersoCRM AG', strasse: 'Bahnhofstrasse', hausnummer: '1', plz: '8001', ort: 'Zürich', land: 'CH' },
+      debtor: null,
+      amount: 1949.75,
+      currency: 'CHF',
+      message: 'Rechnung R-5001',
+    });
+    const lines = payload.split('\r\n');
+    expect(lines).toHaveLength(31);
+    expect(lines.slice(0, 4)).toEqual(['SPC', '0200', '1', 'CH9300762011623852957']);
+    expect(lines[18]).toBe('1949.75');
+    expect(lines[27]).toBe('NON');
+    expect(lines[30]).toBe('EPD');
   });
 });

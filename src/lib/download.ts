@@ -28,3 +28,14 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     return false;
   }
 }
+
+/** Druckt nur den Inhalt des offenen Dialogs (siehe index.css, body.print-dialog) */
+export function printDialog() {
+  document.body.classList.add('print-dialog');
+  const done = () => {
+    document.body.classList.remove('print-dialog');
+    window.removeEventListener('afterprint', done);
+  };
+  window.addEventListener('afterprint', done);
+  window.print();
+}

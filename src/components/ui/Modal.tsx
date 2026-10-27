@@ -47,6 +47,7 @@ export function Modal({ open, onClose, title, subtitle, children, footer, size =
   if (!open) return null;
   return createPortal(
     <div
+      data-modal-overlay
       className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/50 p-4 pt-[6vh] animate-fade-in"
       onMouseDown={(e) => {
         if (!persistent && e.target === e.currentTarget) onClose();
@@ -59,7 +60,7 @@ export function Modal({ open, onClose, title, subtitle, children, footer, size =
         aria-modal="true"
         className={cn('flex max-h-[88vh] w-full flex-col rounded-2xl border border-line bg-surface shadow-pop outline-none animate-slide-up', SIZES[size])}
       >
-        <div className="flex items-start gap-3 border-b border-line px-5 py-4">
+        <div data-modal-chrome className="flex items-start gap-3 border-b border-line px-5 py-4">
           <div className="min-w-0">
             <h2 className="text-[15.5px] font-bold">{title}</h2>
             {subtitle && <p className="mt-0.5 text-[12.5px] text-muted">{subtitle}</p>}
@@ -68,8 +69,8 @@ export function Modal({ open, onClose, title, subtitle, children, footer, size =
             <X size={18} />
           </IconButton>
         </div>
-        <div className="overflow-y-auto px-5 py-4">{children}</div>
-        {footer && <div className="flex flex-wrap items-center justify-end gap-2 rounded-b-2xl border-t border-line bg-surface-2 px-5 py-3">{footer}</div>}
+        <div data-modal-body className="overflow-y-auto px-5 py-4">{children}</div>
+        {footer && <div data-modal-chrome className="flex flex-wrap items-center justify-end gap-2 rounded-b-2xl border-t border-line bg-surface-2 px-5 py-3">{footer}</div>}
       </div>
     </div>,
     document.body,

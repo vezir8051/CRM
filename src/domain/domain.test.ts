@@ -1,4 +1,5 @@
 import { isQrIban, isValidIban, qrBillPayload, splitStreet } from './qrbill';
+import type { Invoice } from '@/types';
 import { describe, expect, it } from 'vitest';
 import { addDays, daysBetween, fmtCHF, fmtDate, fmtRelative, isoWeek, round05, startOfWeek, weekLabel } from './format';
 import { calcMargin, calcTariff, DEFAULT_TARIFF_RATES } from './tarif';
@@ -9,6 +10,7 @@ import { extractCompanyHeuristic, type ScrapedSite } from './company-heuristics'
 import { applyCandidateFilter, emptyFilter, filterFromParams, filterToParams, heuristicQueryToFilter, vocabularyFrom } from './search';
 import { computeInsights } from './insights';
 import { createSeed } from '@/data/seed';
+import { activeAssignmentsAt, activePlacementsAt, percentChange, revenueMonthToDate } from './reports';
 
 const TODAY = '2026-10-27'; // Dienstag
 
@@ -246,5 +248,29 @@ describe('Suche in Alltagssprache (lokal)', () => {
     expect(f.bewilligungen).toEqual(['B']);
     expect(f.verfuegbarBis).toBe(TODAY);
     expect(f.q).toBe('');
+  });
+});
+
+describe('Trends', () => {
+  it('rechnet Prozentveränderungen', () => {
+    expect(percentChange(120, 100)).toBe(20);
+    expect(percentChange(75, 100)).toBe(-25);
+    expect(percentChange(5, 0)).toBeNull();
+  });
+
+  it('vergleicht den Monatsumsatz mit dem gleichen Zeitraum im Vormonat', () => {
+    const inv = (datum: string, netto: number, status: Invoice['status'] = 'Offen') => ({ datum, netto, status }) as Invoice;
+    const r = revenueMonthToDate(
+      [inv('2026-10-05', 1000), inv('2026-09-10', 400), inv('2026-09-29', 999), inv('2026-10-20', 500, 'Storniert')],
+      TODAY,
+    );
+    expect(r).toEqual({ current: 1000, previous: 400 });
+  });
+
+  it('rekonstruiert laufende Prozesse und Einsätze zu einem Stichtag', () => {
+    const seed = createSeed(TODAY);
+    const heute = activePlacementsAt(seed.placements, TODAY);
+    expect(heute).toBe(seed.placements.filter((p) => ['Vorgeschlagen', 'Interview', 'Angebot'].includes(p.phase)).length);
+    expect(activeAssignmentsAt(seed.assignments, TODAY)).toBe(seed.assignments.filter((a) => a.status === 'Aktiv').length);
   });
 });

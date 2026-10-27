@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Briefcase, CalendarCheck, CalendarClock, Clock, FileClock, Handshake, Lightbulb, Receipt, TriangleAlert, UserRound, Users, Wallet } from 'lucide-react';
 import type { Insight } from '@/domain/insights';
 import { computeInsights } from '@/domain/insights';
-import { funnel, revenueByMonth } from '@/domain/reports';
+import { activeAssignmentsAt, activePlacementsAt, funnel, percentChange, revenueByMonth, revenueMonthToDate } from '@/domain/reports';
 import { PHASE_COLORS } from '@/domain/constants';
-import { fmtCHF, fmtCompact, fmtDate, fmtLongDate, fullName, lastMonths, MONTHS_SHORT, todayISO } from '@/domain/format';
+import { addDays, fmtCHF, fmtCompact, fmtDate, fmtLongDate, fullName, lastMonths, MONTHS_SHORT, todayISO } from '@/domain/format';
 import { isInvoiceOverdue } from '@/domain/billing';
 import { useCrmData } from '@/store/selectors';
 import { useCurrentUser } from '@/store/session';
 import { cn } from '@/lib/cn';
-import { Avatar, ButtonLink, Card, CardBody, CardHeader, EmptyState, KpiCard, StatusBadge } from '@/components/ui';
+import { Avatar, ButtonLink, Card, CardBody, CardHeader, EmptyState, StatsCard, StatusBadge } from '@/components/ui';
 import { BarChart, HBarList } from '@/components/charts/Charts';
 import { ActivityRow } from '@/components/shared/ActivityTimeline';
 
@@ -52,7 +52,18 @@ export default function DashboardPage() {
   const aktiveEinsaetze = assignments.filter((a) => a.status === 'Aktiv').length;
   const offen = invoices.filter((i) => i.status === 'Offen');
   const overdue = offen.filter((i) => isInvoiceOverdue(i, today));
-  const umsatzMonat = revenue[revenue.length - 1]?.total ?? 0;
+  // Trends: Umsatz in % ggü. gleichem Zeitraum im Vormonat, Bestände als Differenz zu vor 30 Tagen
+  const trends = useMemo(() => {
+    const vor30 = addDays(today, -30);
+    const mtd = revenueMonthToDate(invoices, today);
+    return {
+      umsatz: mtd.current,
+      umsatzChange: percentChange(mtd.current, mtd.previous),
+      prozesse: activePlacementsAt(placements, today) - activePlacementsAt(placements, vor30),
+      einsaetze: activeAssignmentsAt(assignments, today) - activeAssignmentsAt(assignments, vor30),
+    };
+  }, [invoices, placements, assignments, today]);
+  const neueKandidaten = candidates.filter((c) => c.createdAt.slice(0, 10) >= addDays(today, -30)).length;
 
   // Eigene fällige Aufgaben; sind keine offen, die des Teams
   const tasks = useMemo(() => {
@@ -81,12 +92,19 @@ export default function DashboardPage() {
       </div>
 
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
-        <KpiCard icon={<Users size={20} />} tone="blue" label="Aktive Kandidaten" value={aktiveKandidaten} to="/kandidaten" />
-        <KpiCard icon={<Briefcase size={20} />} tone="amber" label="Offene Vakanzen" value={offeneVakanzen.length} hint={`${offeneVakanzen.filter((j) => j.prioritaet === 'Hoch').length} mit hoher Priorität`} to="/vakanzen" />
-        <KpiCard icon={<Handshake size={20} />} tone="purple" label="Laufende Prozesse" value={laufend.length} hint={`${laufend.filter((p) => p.phase === 'Angebot').length} im Angebot`} to="/pipeline" />
-        <KpiCard icon={<CalendarClock size={20} />} tone="cyan" label="Aktive Einsätze" value={aktiveEinsaetze} to="/einsaetze" />
-        <KpiCard icon={<Wallet size={20} />} tone="green" label="Umsatz diesen Monat" value={fmtCHF(umsatzMonat)} hint="netto, verrechnet" to="/berichte" />
-        <KpiCard icon={<Receipt size={20} />} tone={overdue.length ? 'red' : 'gray'} label="Offene Forderungen" value={fmtCHF(offen.reduce((s, i) => s + i.total, 0))} hint={overdue.length ? `${overdue.length} überfällig` : 'nichts überfällig'} to="/rechnungen" />
+        <StatsCard title="Aktive Kandidaten" value={aktiveKandidaten} icon={Users} gradient="blue" hint={`${neueKandidaten} neu in 30 Tagen`} to="/kandidaten" />
+        <StatsCard title="Offene Vakanzen" value={offeneVakanzen.length} icon={Briefcase} gradient="amber" hint={`${offeneVakanzen.filter((j) => j.prioritaet === 'Hoch').length} mit hoher Priorität`} to="/vakanzen" />
+        <StatsCard title="Laufende Prozesse" value={laufend.length} icon={Handshake} gradient="purple" change={trends.prozesse} changeFormat="count" changeLabel="ggü. vor 30 Tagen" hint={`${laufend.filter((p) => p.phase === 'Angebot').length} im Angebot`} to="/pipeline" />
+        <StatsCard title="Aktive Einsätze" value={aktiveEinsaetze} icon={CalendarClock} gradient="cyan" change={trends.einsaetze} changeFormat="count" changeLabel="ggü. vor 30 Tagen" to="/einsaetze" />
+        <StatsCard title="Umsatz diesen Monat" value={fmtCHF(trends.umsatz)} icon={Wallet} gradient="green" change={trends.umsatzChange} changeLabel="ggü. Vormonat" hint="netto, verrechnet" to="/berichte" />
+        <StatsCard
+          title="Offene Forderungen"
+          value={fmtCHF(offen.reduce((s, i) => s + i.total, 0))}
+          icon={Receipt}
+          gradient={overdue.length ? 'red' : 'gray'}
+          hint={overdue.length ? `${overdue.length} überfällig` : 'nichts überfällig'}
+          to="/rechnungen"
+        />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[3fr_2fr]">

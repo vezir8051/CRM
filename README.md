@@ -97,7 +97,7 @@ private und interne Adressen (SSRF-Schutz), geprüfte Weiterleitungen, Grössen-
 ## Technik
 
 React 18 · TypeScript (strict) · Vite · Tailwind CSS (Design-Tokens, Dark Mode) · Zustand (persistiert
-in `localStorage`) · React Router (Lazy Loading je Seite) · lucide-react · pdf.js und mammoth
+in `localStorage`) · React Router (Lazy Loading je Seite) · framer-motion (Kennzahl-Karten) · lucide-react · pdf.js und mammoth
 (nur bei Bedarf geladen) · qrcode-generator · Anthropic SDK (strukturierte Ausgaben) · Vitest ·
 Diagramme als eigenes Inline-SVG.
 

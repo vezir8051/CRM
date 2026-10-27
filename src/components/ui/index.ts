@@ -3,6 +3,7 @@ export * from './Spinner';
 export * from './Badge';
 export * from './Form';
 export * from './Card';
+export * from './StatsCard';
 export * from './Modal';
 export * from './Tabs';
 export * from './DataTable';

@@ -6,7 +6,7 @@ import { CHART_COLORS, PHASE_COLORS, STATUS_TONES, TONE_HEX } from '@/domain/con
 import { fmtCHF, fmtCompact, lastMonths, monthLabel, MONTHS_SHORT, todayISO } from '@/domain/format';
 import { useCrmData } from '@/store/selectors';
 import { downloadCsv } from '@/lib/download';
-import { Avatar, Button, Card, CardBody, CardHeader, DataTable, KpiCard, PageHeader, SegmentedControl } from '@/components/ui';
+import { Avatar, Button, Card, CardBody, CardHeader, DataTable, StatsCard, PageHeader, SegmentedControl } from '@/components/ui';
 import { BarChart, DonutChart, HBarList } from '@/components/charts/Charts';
 
 type Range = '6' | '12';
@@ -67,10 +67,10 @@ export default function ReportsPage() {
       />
 
       <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <KpiCard icon={<Wallet size={20} />} tone="green" label="Umsatz netto" value={fmtCHF(total)} hint={`Verleih ${total ? Math.round((verleih / total) * 100) : 0} % · Honorare ${total ? 100 - Math.round((verleih / total) * 100) : 0} %`} />
-        <KpiCard icon={<Handshake size={20} />} tone="purple" label="Vermittlungen gesamt" value={won} />
-        <KpiCard icon={<Percent size={20} />} tone="blue" label="Erfolgsquote" value={quote !== null ? `${quote} %` : '–'} hint="Vermittelt / entschiedene Prozesse" />
-        <KpiCard icon={<Clock size={20} />} tone="amber" label="Ø Tage bis Vermittlung" value={avgDays ?? '–'} hint="Vom Vorschlag bis zur Zusage" />
+        <StatsCard icon={Wallet} gradient="green" title="Umsatz netto" value={fmtCHF(total)} hint={`Verleih ${total ? Math.round((verleih / total) * 100) : 0} % · Honorare ${total ? 100 - Math.round((verleih / total) * 100) : 0} %`} />
+        <StatsCard icon={Handshake} gradient="purple" title="Vermittlungen gesamt" value={won} />
+        <StatsCard icon={Percent} gradient="blue" title="Erfolgsquote" value={quote !== null ? `${quote} %` : '–'} hint="Vermittelt / entschiedene Prozesse" />
+        <StatsCard icon={Clock} gradient="amber" title="Ø Tage bis Vermittlung" value={avgDays ?? '–'} hint="Vom Vorschlag bis zur Zusage" />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[3fr_2fr]">

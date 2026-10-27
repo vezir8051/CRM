@@ -9,7 +9,7 @@ import { assignmentWeeks, useLookups } from '@/store/selectors';
 import { confirmDialog, toast } from '@/store/ui';
 import { useTabParam } from '@/lib/hooks';
 import { printDialog } from '@/lib/download';
-import { Badge, Button, ButtonLink, Card, CardBody, CardHeader, DataTable, DropdownMenu, EmptyState, IconButton, InfoList, KpiCard, Modal, StatusBadge, Tabs } from '@/components/ui';
+import { Badge, Button, ButtonLink, Card, CardBody, CardHeader, DataTable, DropdownMenu, EmptyState, IconButton, InfoList, StatsCard, Modal, StatusBadge, Tabs } from '@/components/ui';
 import { ActivityTimeline } from '@/components/shared/ActivityTimeline';
 import { ActivityDialog } from '@/components/shared/ActivityDialog';
 import { AuditList } from '@/components/shared/AuditList';
@@ -132,10 +132,10 @@ export default function AssignmentDetailPage() {
       </div>
 
       <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <KpiCard icon={<Clock size={20} />} tone="blue" label="Rapportierte Stunden" value={fmtHours(eco.stunden)} hint={`${own.length} Wochenrapporte`} />
-        <KpiCard icon={<Coins size={20} />} tone="cyan" label="Umsatz" value={fmtCHF(eco.umsatz)} hint={`${fmtCHF(a.tarif, { decimals: true })}/h`} />
-        <KpiCard icon={<TrendingUp size={20} />} tone="green" label="Deckungsbeitrag" value={fmtCHF(eco.deckungsbeitrag)} hint={`${fmtCHF(m.deckungsbeitrag, { decimals: true })}/h`} />
-        <KpiCard icon={<CalendarCheck size={20} />} tone={marginTone(m.margeProzent)} label="Marge" value={fmtPercent(m.margeProzent)} hint={`Ziel ${settings.tarif.zielmarge} %`} />
+        <StatsCard icon={Clock} gradient="blue" title="Rapportierte Stunden" value={fmtHours(eco.stunden)} hint={`${own.length} Wochenrapporte`} />
+        <StatsCard icon={Coins} gradient="cyan" title="Umsatz" value={fmtCHF(eco.umsatz)} hint={`${fmtCHF(a.tarif, { decimals: true })}/h`} />
+        <StatsCard icon={TrendingUp} gradient="green" title="Deckungsbeitrag" value={fmtCHF(eco.deckungsbeitrag)} hint={`${fmtCHF(m.deckungsbeitrag, { decimals: true })}/h`} />
+        <StatsCard icon={CalendarCheck} gradient={marginTone(m.margeProzent)} title="Marge" value={fmtPercent(m.margeProzent)} hint={`Ziel ${settings.tarif.zielmarge} %`} />
       </div>
 
       <Tabs<Tab>

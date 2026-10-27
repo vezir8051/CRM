@@ -1,8 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import { cn } from '@/lib/cn';
-import type { Tone } from '@/domain/constants';
-import { TONE_TILE } from './Badge';
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cn('min-w-0 rounded-xl border border-line bg-surface shadow-card', className)}>{children}</div>;
@@ -36,27 +33,6 @@ export function PageHeader({ title, subtitle, actions, children }: { title: Reac
       </div>
       {actions && <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
-  );
-}
-
-/** Kennzahl-Kachel; mit `to` klickbar */
-export function KpiCard({ icon, label, value, tone = 'blue', hint, to }: { icon: ReactNode; label: string; value: ReactNode; tone?: Tone; hint?: ReactNode; to?: string }) {
-  const inner = (
-    <div className="flex h-full items-center gap-3.5 rounded-xl border border-line bg-surface px-3.5 py-3 shadow-card transition-shadow hover:shadow-md sm:px-4 sm:py-3.5">
-      <div className={cn('hidden h-11 w-11 shrink-0 items-center justify-center rounded-lg sm:flex', TONE_TILE[tone])}>{icon}</div>
-      <div className="min-w-0">
-        <div className="truncate text-xl font-bold leading-tight tabular-nums sm:text-[22px]">{value}</div>
-        <div className="truncate text-[12.5px] text-muted">{label}</div>
-        {hint && <div className="truncate text-[11.5px] text-subtle">{hint}</div>}
-      </div>
-    </div>
-  );
-  return to ? (
-    <Link to={to} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 rounded-xl">
-      {inner}
-    </Link>
-  ) : (
-    inner
   );
 }
 

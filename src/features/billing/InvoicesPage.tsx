@@ -9,7 +9,7 @@ import { useData } from '@/store/data';
 import { useLookups } from '@/store/selectors';
 import { toast } from '@/store/ui';
 import { downloadCsv } from '@/lib/download';
-import { Badge, Button, Card, CardHeader, CellStack, DataTable, EmptyState, KpiCard, PageHeader, SearchInput, Select, StatusBadge, Toolbar, type Column } from '@/components/ui';
+import { Badge, Button, Card, CardHeader, CellStack, DataTable, EmptyState, StatsCard, PageHeader, SearchInput, Select, StatusBadge, Toolbar, type Column } from '@/components/ui';
 
 type StatusFilter = InvoiceStatus | 'ueberfaellig' | '';
 
@@ -97,10 +97,10 @@ export default function InvoicesPage() {
         }
       />
       <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <KpiCard icon={<Wallet size={20} />} tone="blue" label="Offene Forderungen" value={fmtCHF(sum(offen))} hint={`${offen.length} Rechnungen`} />
-        <KpiCard icon={<AlarmClock size={20} />} tone="red" label="Überfällig" value={fmtCHF(sum(overdue))} hint={`${overdue.length} Rechnungen`} to="/rechnungen?status=ueberfaellig" />
-        <KpiCard icon={<CircleCheck size={20} />} tone="green" label="Zahlungseingang diesen Monat" value={fmtCHF(sum(bezahltMonat))} />
-        <KpiCard icon={<FilePlus2 size={20} />} tone="amber" label="Bereit zur Verrechnung (netto)" value={fmtCHF(groups.reduce((s, g) => s + g.netto, 0))} hint={`${groups.length} Kunden-Perioden`} />
+        <StatsCard icon={Wallet} gradient="blue" title="Offene Forderungen" value={fmtCHF(sum(offen))} hint={`${offen.length} Rechnungen`} />
+        <StatsCard icon={AlarmClock} gradient="red" title="Überfällig" value={fmtCHF(sum(overdue))} hint={`${overdue.length} Rechnungen`} to="/rechnungen?status=ueberfaellig" />
+        <StatsCard icon={CircleCheck} gradient="green" title="Zahlungseingang diesen Monat" value={fmtCHF(sum(bezahltMonat))} />
+        <StatsCard icon={FilePlus2} gradient="amber" title="Bereit zur Verrechnung (netto)" value={fmtCHF(groups.reduce((s, g) => s + g.netto, 0))} hint={`${groups.length} Kunden-Perioden`} />
       </div>
 
       {groups.length > 0 && (

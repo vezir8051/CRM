@@ -8,7 +8,7 @@ import { useTabParam } from '@/lib/hooks';
 import { useData } from '@/store/data';
 import { useLookups } from '@/store/selectors';
 import { confirmDialog, toast } from '@/store/ui';
-import { Avatar, Button, ButtonLink, Card, CardBody, CardHeader, CellStack, DataTable, EmptyState, IconButton, InfoList, KpiCard, StatusBadge, Tabs } from '@/components/ui';
+import { Avatar, Button, ButtonLink, Card, CardBody, CardHeader, CellStack, DataTable, EmptyState, IconButton, InfoList, StatsCard, StatusBadge, Tabs } from '@/components/ui';
 import { ActivityTimeline } from '@/components/shared/ActivityTimeline';
 import { ActivityDialog } from '@/components/shared/ActivityDialog';
 import { AuditList } from '@/components/shared/AuditList';
@@ -122,10 +122,10 @@ export default function CompanyDetailPage() {
       {tab === 'uebersicht' && (
         <>
           <div className="mb-5 grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiCard icon={<Briefcase size={20} />} tone="blue" label="Offene Vakanzen" value={kpi.offen} />
-            <KpiCard icon={<Handshake size={20} />} tone="purple" label="Laufende Prozesse" value={kpi.prozesse} />
-            <KpiCard icon={<CalendarClock size={20} />} tone="cyan" label="Aktive Einsätze" value={kpi.einsaetze} />
-            <KpiCard icon={<Wallet size={20} />} tone="green" label={`Umsatz ${todayISO().slice(0, 4)} (netto)`} value={fmtCHF(kpi.umsatz)} hint={kpi.offenBetrag ? `${fmtCHF(kpi.offenBetrag)} offen` : undefined} />
+            <StatsCard icon={Briefcase} gradient="blue" title="Offene Vakanzen" value={kpi.offen} />
+            <StatsCard icon={Handshake} gradient="purple" title="Laufende Prozesse" value={kpi.prozesse} />
+            <StatsCard icon={CalendarClock} gradient="cyan" title="Aktive Einsätze" value={kpi.einsaetze} />
+            <StatsCard icon={Wallet} gradient="green" title={`Umsatz ${todayISO().slice(0, 4)} (netto)`} value={fmtCHF(kpi.umsatz)} hint={kpi.offenBetrag ? `${fmtCHF(kpi.offenBetrag)} offen` : undefined} />
           </div>
           <div className="grid gap-5 xl:grid-cols-2">
             <Card>

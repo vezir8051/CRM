@@ -8,7 +8,7 @@ import { daysBetween, fmtCHF, fmtDate, fmtPercent, fullName, normalize, todayISO
 import { useData } from '@/store/data';
 import { useLookups } from '@/store/selectors';
 import { useUrlAction } from '@/lib/hooks';
-import { Avatar, Badge, Button, Card, CellStack, DataTable, EmptyState, KpiCard, PageHeader, SearchInput, Select, StatusBadge, Toolbar, type Column } from '@/components/ui';
+import { Avatar, Badge, Button, Card, CellStack, DataTable, EmptyState, StatsCard, PageHeader, SearchInput, Select, StatusBadge, Toolbar, type Column } from '@/components/ui';
 import { AssignmentForm, type AssignmentPreset } from './AssignmentForm';
 
 export default function AssignmentsPage() {
@@ -104,10 +104,10 @@ export default function AssignmentsPage() {
         }
       />
       <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <KpiCard icon={<UserCheck size={20} />} tone="cyan" label="Aktive Einsätze" value={aktive.length} hint={`${assignments.filter((a) => a.status === 'Geplant').length} geplant`} />
-        <KpiCard icon={<Coins size={20} />} tone="blue" label="Umsatz pro Woche (Soll)" value={fmtCHF(umsatzWoche)} />
-        <KpiCard icon={<TrendingUp size={20} />} tone="green" label="Deckungsbeitrag pro Woche" value={fmtCHF(dbWoche)} hint={umsatzWoche ? `Ø Marge ${fmtPercent((dbWoche / umsatzWoche) * 100)}` : undefined} />
-        <KpiCard icon={<Clock size={20} />} tone="amber" label="Enden in ≤ 14 Tagen" value={endendBald} hint="Verlängerung / Anschluss planen" />
+        <StatsCard icon={UserCheck} gradient="cyan" title="Aktive Einsätze" value={aktive.length} hint={`${assignments.filter((a) => a.status === 'Geplant').length} geplant`} />
+        <StatsCard icon={Coins} gradient="blue" title="Umsatz pro Woche (Soll)" value={fmtCHF(umsatzWoche)} />
+        <StatsCard icon={TrendingUp} gradient="green" title="Deckungsbeitrag pro Woche" value={fmtCHF(dbWoche)} hint={umsatzWoche ? `Ø Marge ${fmtPercent((dbWoche / umsatzWoche) * 100)}` : undefined} />
+        <StatsCard icon={Clock} gradient="amber" title="Enden in ≤ 14 Tagen" value={endendBald} hint="Verlängerung / Anschluss planen" />
       </div>
       <Toolbar>
         <SearchInput className="w-full sm:w-72" value={q} onChange={setQ} placeholder="Name, Kunde, Funktion…" />

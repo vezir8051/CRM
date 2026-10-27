@@ -1,9 +1,9 @@
 /* ============================================================
    Kennzahlen für Dashboard und Berichte (reine Funktionen)
    ============================================================ */
-import type { Candidate, CandidateSource, Invoice, Job, Phase, Placement, User } from '@/types';
-import { CANDIDATE_SOURCES, PHASES } from '@/types';
-import { daysBetween, monthKey, round2 } from './format';
+import type { Assignment, Candidate, CandidateSource, Invoice, Job, Phase, Placement, User } from '@/types';
+import { ACTIVE_PHASES, CANDIDATE_SOURCES, PHASES } from '@/types';
+import { daysBetween, monthKey, parseDate, round2, toISODate } from './format';
 
 const billed = (i: Invoice) => i.status !== 'Storniert';
 
@@ -98,4 +98,39 @@ export function consultantStats(users: User[], jobs: Job[], placements: Placemen
       };
     })
     .sort((a, b) => b.vermittlungen - a.vermittlungen || b.aktiveProzesse - a.aktiveProzesse);
+}
+
+/* ---------- Trends (für StatsCard) ---------- */
+
+/** Veränderung in ganzen Prozent; null ohne Vergleichsbasis */
+export function percentChange(current: number, previous: number): number | null {
+  if (!previous) return null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
+/** Netto-Umsatz seit Monatsbeginn und im gleichen Zeitraum des Vormonats (fairer Vergleich) */
+export function revenueMonthToDate(invoices: Invoice[], today: string): { current: number; previous: number } {
+  const d = parseDate(today)!;
+  const day = d.getDate();
+  const prevLastDay = new Date(d.getFullYear(), d.getMonth(), 0).getDate();
+  const curFrom = toISODate(new Date(d.getFullYear(), d.getMonth(), 1));
+  const prevFrom = toISODate(new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  const prevTo = toISODate(new Date(d.getFullYear(), d.getMonth() - 1, Math.min(day, prevLastDay)));
+  const sum = (from: string, to: string) =>
+    round2(invoices.filter((i) => billed(i) && i.datum >= from && i.datum <= to).reduce((s, i) => s + i.netto, 0));
+  return { current: sum(curFrom, today), previous: sum(prevFrom, prevTo) };
+}
+
+/** Laufende Vermittlungsprozesse an einem Stichtag (aus dem Phasenverlauf rekonstruiert) */
+export function activePlacementsAt(placements: Placement[], date: string): number {
+  return placements.filter((p) => {
+    const until = p.verlauf.filter((v) => v.datum.slice(0, 10) <= date);
+    const last = until[until.length - 1];
+    return !!last && ACTIVE_PHASES.includes(last.phase);
+  }).length;
+}
+
+/** Einsätze, die an einem Stichtag liefen */
+export function activeAssignmentsAt(assignments: Assignment[], date: string): number {
+  return assignments.filter((a) => a.status !== 'Geplant' && a.start <= date && (!a.ende || a.ende >= date)).length;
 }

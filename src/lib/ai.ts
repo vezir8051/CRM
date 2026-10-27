@@ -317,3 +317,13 @@ function compactJob(j: Job) {
     skills: j.skills, beschreibung: j.beschreibung.slice(0, 1500), deadline: j.deadline,
   };
 }
+
+/** Verbindungstest für die Einstellungen */
+export async function testAiConnection(): Promise<{ ok: true; model: string } | { ok: false; error: string }> {
+  try {
+    const r = await callAi<{ ok: boolean; model: string }>('ping', {});
+    return { ok: true, model: r.model };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Unbekannter Fehler' };
+  }
+}

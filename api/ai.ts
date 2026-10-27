@@ -3,7 +3,7 @@
 
    GET  /api/ai  → { serverKey, tokenRequired }
    POST /api/ai  { task, model?, ... }
-        task = cv | company | generate | match | search
+        task = cv | company | generate | match | search | ping
 
    Schlüssel: Header «x-anthropic-key» (eigener Schlüssel aus den
    Einstellungen) oder Umgebungsvariable ANTHROPIC_API_KEY. Ist
@@ -272,7 +272,21 @@ async function taskSearch(client: Anthropic, model: string, body: Json) {
   });
 }
 
+/** Verbindungstest (Einstellungen → KI): minimaler Aufruf */
+async function taskPing(client: Anthropic, model: string) {
+  const run = (m: string) => client.messages.create({ model: m, max_tokens: 16, messages: [{ role: 'user', content: 'Antworte nur mit: OK' }] });
+  let msg: Anthropic.Message;
+  try {
+    msg = await run(model);
+  } catch (err) {
+    if (!(err instanceof Anthropic.NotFoundError) || model === FALLBACK_MODEL) throw err;
+    msg = await run(FALLBACK_MODEL);
+  }
+  return { ok: true, model: msg.model };
+}
+
 const TASKS: Record<string, (c: Anthropic, m: string, b: Json) => Promise<unknown>> = {
+  ping: taskPing,
   cv: taskCv,
   company: taskCompany,
   generate: taskGenerate,

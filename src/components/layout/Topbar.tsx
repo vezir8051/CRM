@@ -27,10 +27,12 @@ export function Topbar() {
       <button
         type="button"
         onClick={() => setPaletteOpen(true)}
-        className="ml-auto flex h-9 w-full max-w-[420px] items-center gap-2 rounded-lg border border-line bg-surface-2 px-3 text-left text-[13.5px] text-subtle transition-colors hover:border-brand/50"
+        className="ml-auto flex h-9 w-full min-w-0 max-w-[420px] items-center gap-2 rounded-lg border border-line bg-surface-2 px-3 text-left text-[13.5px] text-subtle transition-colors hover:border-brand/50"
       >
         <Search size={15} />
-        <span className="flex-1 truncate">Suchen oder fragen: «Elektriker in Winterthur ab sofort»</span>
+        <span className="flex-1 truncate">
+          Suchen<span className="hidden sm:inline"> oder fragen: «Elektriker in Winterthur ab sofort»</span>
+        </span>
         <span className="hidden gap-1 sm:flex">
           <Kbd>Ctrl</Kbd>
           <Kbd>K</Kbd>

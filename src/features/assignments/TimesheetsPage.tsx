@@ -148,7 +148,7 @@ function WeekView({ woche, onWoche }: { woche: string; onWoche: (w: string) => v
             <IconButton label="Vorherige Woche" onClick={() => onWoche(addDays(woche, -7))}>
               <ChevronLeft size={17} />
             </IconButton>
-            <span className="min-w-[230px] text-center">{weekLabel(woche)}</span>
+            <span className="whitespace-nowrap px-1 text-center sm:min-w-[230px]">{weekLabel(woche)}</span>
             <IconButton label="Nächste Woche" onClick={() => onWoche(addDays(woche, 7))}>
               <ChevronRight size={17} />
             </IconButton>
@@ -170,7 +170,7 @@ function WeekView({ woche, onWoche }: { woche: string; onWoche: (w: string) => v
       />
       {rows.length ? (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[980px] text-[13px]">
+          <table className="w-full min-w-[1040px] text-[13px]">
             <thead>
               <tr className="border-b border-line text-left text-[11.5px] font-semibold uppercase tracking-wide text-muted">
                 <th className="px-4 py-2.5">Mitarbeiter/in</th>
@@ -217,7 +217,7 @@ function WeekView({ woche, onWoche }: { woche: string; onWoche: (w: string) => v
                             value={v.stunden[i] || ''}
                             placeholder={inRange ? '0' : ''}
                             onChange={(e) => setDraft(a, { stunden: v.stunden.map((h, j) => (j === i ? Math.min(24, Math.max(0, Number(e.target.value) || 0)) : h)) })}
-                            className={cn('input-base h-8 w-full px-1.5 text-center tabular-nums', i >= 5 && 'bg-surface-2', !inRange && 'opacity-30')}
+                            className={cn('input-base h-8 w-full min-w-[48px] px-1 text-center tabular-nums', i >= 5 && 'bg-surface-2', !inRange && 'opacity-30')}
                           />
                         </td>
                       );

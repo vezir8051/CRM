@@ -178,7 +178,7 @@ export default function InvoiceDetailPage() {
                   <td className="whitespace-nowrap py-1.5 px-2 text-right tabular-nums">
                     {fmtNumber(p.menge)} {p.einheit}
                   </td>
-                  <td className="whitespace-nowrap py-1.5 px-2 text-right tabular-nums">{fmtNumber(p.preis)}</td>
+                  <td className="whitespace-nowrap py-1.5 px-2 text-right tabular-nums">{p.preis.toFixed(2)}</td>
                   <td className="whitespace-nowrap py-1.5 pl-2 text-right tabular-nums">{p.betrag.toFixed(2)}</td>
                 </tr>
               ))}

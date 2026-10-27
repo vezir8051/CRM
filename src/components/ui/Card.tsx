@@ -5,12 +5,12 @@ import type { Tone } from '@/domain/constants';
 import { TONE_TILE } from './Badge';
 
 export function Card({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn('rounded-xl border border-line bg-surface shadow-card', className)}>{children}</div>;
+  return <div className={cn('min-w-0 rounded-xl border border-line bg-surface shadow-card', className)}>{children}</div>;
 }
 
 export function CardHeader({ title, subtitle, actions, icon, className }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; icon?: ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-center gap-3 border-b border-line px-5 py-3.5', className)}>
+    <div className={cn('flex flex-wrap items-center gap-3 border-b border-line px-5 py-3.5', className)}>
       {icon && <span className="text-muted">{icon}</span>}
       <div className="min-w-0">
         <h3 className="truncate text-sm font-bold">{title}</h3>
@@ -42,10 +42,10 @@ export function PageHeader({ title, subtitle, actions, children }: { title: Reac
 /** Kennzahl-Kachel; mit `to` klickbar */
 export function KpiCard({ icon, label, value, tone = 'blue', hint, to }: { icon: ReactNode; label: string; value: ReactNode; tone?: Tone; hint?: ReactNode; to?: string }) {
   const inner = (
-    <div className="flex h-full items-center gap-3.5 rounded-xl border border-line bg-surface px-4 py-3.5 shadow-card transition-shadow hover:shadow-md">
-      <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-lg', TONE_TILE[tone])}>{icon}</div>
+    <div className="flex h-full items-center gap-3.5 rounded-xl border border-line bg-surface px-3.5 py-3 shadow-card transition-shadow hover:shadow-md sm:px-4 sm:py-3.5">
+      <div className={cn('hidden h-11 w-11 shrink-0 items-center justify-center rounded-lg sm:flex', TONE_TILE[tone])}>{icon}</div>
       <div className="min-w-0">
-        <div className="truncate text-[22px] font-bold leading-tight tabular-nums">{value}</div>
+        <div className="truncate text-xl font-bold leading-tight tabular-nums sm:text-[22px]">{value}</div>
         <div className="truncate text-[12.5px] text-muted">{label}</div>
         {hint && <div className="truncate text-[11.5px] text-subtle">{hint}</div>}
       </div>

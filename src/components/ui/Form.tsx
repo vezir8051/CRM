@@ -6,7 +6,7 @@
      uncertain → gelb, «Unsicher – bitte prüfen»
    ============================================================ */
 import { forwardRef, useState, type InputHTMLAttributes, type KeyboardEvent, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
-import { AlertCircle, HelpCircle } from 'lucide-react';
+import { CircleAlert, CircleHelp } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Tag } from './Badge';
 
@@ -36,12 +36,12 @@ export function Field({ label, children, hint, error, required, state, missingTe
       {children}
       {state === 'missing' && (
         <p className="mt-1 flex items-center gap-1 text-[11.5px] font-medium text-red-600 dark:text-red-400">
-          <AlertCircle size={12} /> {missingText ?? 'Nicht gefunden – bitte ergänzen'}
+          <CircleAlert size={12} /> {missingText ?? 'Nicht gefunden – bitte ergänzen'}
         </p>
       )}
       {state === 'uncertain' && (
         <p className="mt-1 flex items-center gap-1 text-[11.5px] font-medium text-amber-700 dark:text-amber-400">
-          <HelpCircle size={12} /> Unsicher erkannt – bitte prüfen
+          <CircleHelp size={12} /> Unsicher erkannt – bitte prüfen
         </p>
       )}
       {error && <p className="mt-1 text-[11.5px] font-medium text-red-600">{error}</p>}

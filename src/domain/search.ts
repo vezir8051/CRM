@@ -99,10 +99,20 @@ export function vocabularyFrom(candidates: Candidate[]): SearchVocabulary {
  * Lokale Interpretation einer Suchanfrage wie
  * «Elektriker in Winterthur ab sofort, mind. 5 Jahre Erfahrung».
  */
+/** Umgangssprachliche Berufsbezeichnungen → Wortstamm der erfassten Berufe */
+const JOB_SYNONYMS: [RegExp, string][] = [
+  [/\belektriker(in)?\b/, 'elektroinstallateur'],
+  [/\b(pfleger(in)?|krankenschwester|krankenpfleger(in)?)\b/, 'pflegefach'],
+  [/\b(lagerist(in)?|staplerfahrer(in)?)\b/, 'logistiker'],
+  [/\b(informatiker(in)?|it[- ]?support(er)?)\b/, 'ict-supporter'],
+  [/\b(entwickler(in)?|programmierer(in)?|developer)\b/, 'softwareentwickler'],
+];
+
 export function heuristicQueryToFilter(query: string, vocab: SearchVocabulary, today: string = todayISO()): CandidateFilter {
   const f = emptyFilter();
   let rest = ` ${query} `;
-  const n = normalize(query);
+  const raw = normalize(query);
+  const n = [raw, ...JOB_SYNONYMS.filter(([re]) => re.test(raw)).map(([, stem]) => stem)].join(' ');
 
   const take = (re: RegExp) => {
     rest = rest.replace(re, ' ');
@@ -125,6 +135,7 @@ export function heuristicQueryToFilter(query: string, vocab: SearchVocabulary, t
     if (stem.length >= 5 && n.includes(stem.slice(0, Math.max(5, stem.length - 3)))) {
       f.berufe.push(stem.length > 6 ? b.split(/\s+/)[0] : b);
       take(new RegExp(escapeRe(b.split(/\s+/)[0]).slice(0, 6) + '\\S*', 'i'));
+      for (const [re] of JOB_SYNONYMS) take(new RegExp(re.source, 'i'));
     }
   }
 
@@ -148,7 +159,10 @@ export function heuristicQueryToFilter(query: string, vocab: SearchVocabulary, t
   else if (/festanstellung|festangestellt/.test(n)) f.anstellungsart = 'Festanstellung';
 
   const bew = n.match(/bewilligung\s*([cblg])\b|\b([cblg])[- ]bewilligung/);
-  if (bew) f.bewilligungen = [((bew[1] || bew[2]) as string).toUpperCase() as Exclude<Permit, ''>];
+  if (bew) {
+    f.bewilligungen = [((bew[1] || bew[2]) as string).toUpperCase() as Exclude<Permit, ''>];
+    take(/(?:\b[cblg][- ])?bewilligung(?:\s*[cblg]\b)?/i);
+  }
 
   // Übrig gebliebene, bedeutungstragende Wörter als Volltext
   const leftovers = rest

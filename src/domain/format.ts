@@ -133,6 +133,15 @@ export function fmtRelative(value: string | null | undefined, today: ISODate = t
   return `in ${diff} Tagen`;
 }
 
+/** Verfügbarkeit als Satzteil: «sofort», «morgen», «in 5 Tagen» */
+export function fmtAvailability(value: string | null | undefined, today: ISODate = todayISO()): string {
+  if (!value || !parseDate(value)) return 'ab sofort';
+  const diff = daysBetween(today, value.slice(0, 10));
+  if (diff <= 0) return 'sofort';
+  if (diff === 1) return 'morgen';
+  return `in ${diff} Tagen`;
+}
+
 /** Fällig und in der Vergangenheit (Datum-only → ab Folgetag überfällig) */
 export function isOverdue(value: string | null | undefined, now: Date = new Date()): boolean {
   const d = parseDate(value);

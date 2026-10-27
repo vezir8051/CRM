@@ -236,3 +236,15 @@ describe('QR-Rechnung', () => {
     expect(lines[30]).toBe('EPD');
   });
 });
+
+describe('Suche in Alltagssprache (lokal)', () => {
+  it('versteht umgangssprachliche Berufe und Bewilligungen', () => {
+    const seed = createSeed(TODAY);
+    const f = heuristicQueryToFilter('Elektriker in Winterthur ab sofort mit B-Bewilligung', vocabularyFrom(seed.candidates), TODAY);
+    expect(f.berufe).toContain('Elektroinstallateur');
+    expect(f.orte).toContain('Winterthur');
+    expect(f.bewilligungen).toEqual(['B']);
+    expect(f.verfuegbarBis).toBe(TODAY);
+    expect(f.q).toBe('');
+  });
+});

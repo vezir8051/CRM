@@ -98,6 +98,22 @@ export function createSeed(today: string = todayISO()): CrmData {
       beruf: 'Kauffrau EFZ', ausbildung: 'Kauffrau EFZ E-Profil', erfahrungJahre: 3, skills: ['Administration', 'Korrespondenz', 'MS Office', 'Empfang', 'Offertwesen'],
       sprachen: [{ sprache: 'Deutsch', niveau: 'Muttersprache' }, { sprache: 'Französisch', niveau: 'C1' }], verfuegbarAb: d(-20), lohnvorstellung: 60000,
       status: 'Vermittelt', betreuerId: 'u3' }, 45),
+    // Freie Profile, die zu offenen Vakanzen passen (Demo für das Matching)
+    cand({ id: 'c17', nr: 'K-1017', anrede: 'Herr', vorname: 'Marco', nachname: 'Bernasconi', email: 'marco.bernasconi@proton.me', telefon: '+41 78 640 17 22', geburtsdatum: '1988-07-05', strasse: 'Zugerstrasse 41', plz: '6340', ort: 'Baar',
+      beruf: 'Softwareentwickler', ausbildung: 'MSc Informatik, ETH Zürich', erfahrungJahre: 10, skills: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'AWS', 'Docker'],
+      sprachen: [{ sprache: 'Deutsch', niveau: 'Muttersprache' }, { sprache: 'Italienisch', niveau: 'C1' }, { sprache: 'Englisch', niveau: 'C1' }], verfuegbarAb: d(30), lohnvorstellung: 118000, pensum: '80-100%',
+      quelle: 'LinkedIn', notizen: 'Aktuell Tech Lead in einem Scale-up, sucht mehr Verantwortung.', tags: ['Top-Profil'] }, 4),
+    cand({ id: 'c18', nr: 'K-1018', anrede: 'Frau', vorname: 'Jasmin', nachname: 'Huber', email: 'jasmin.huber@bluewin.ch', telefon: '+41 79 233 18 50', geburtsdatum: '1993-11-21', strasse: 'Badenerstrasse 12', plz: '8953', ort: 'Dietikon',
+      beruf: 'Pflegefachfrau HF', ausbildung: 'Dipl. Pflegefachfrau HF, NDS Notfallpflege', erfahrungJahre: 7, skills: ['Notfallpflege', 'Akutpflege', 'BLS-AED', 'Triage'],
+      verfuegbarAb: d(14), lohnvorstellung: 89000, pensum: '80-100%', betreuerId: 'u3' }, 3),
+    cand({ id: 'c19', nr: 'K-1019', anrede: 'Herr', vorname: 'Dario', nachname: 'Kovačević', email: 'dario.k@gmx.ch', telefon: '+41 76 512 19 77', geburtsdatum: '1996-02-14', strasse: 'Hochbergerstrasse 70', plz: '4057', ort: 'Basel',
+      nationalitaet: 'Kroatien', bewilligung: 'C', beruf: 'Logistiker EFZ', ausbildung: 'Logistiker EFZ Lager', erfahrungJahre: 6, skills: ['Lagerbewirtschaftung', 'Staplerausweis', 'Kommissionierung', 'SAP'],
+      sprachen: [{ sprache: 'Deutsch', niveau: 'C1' }, { sprache: 'Kroatisch', niveau: 'Muttersprache' }], verfuegbarAb: d(-2), anstellungsarten: ['Temporär', 'Festanstellung'], stundenlohn: 29,
+      quelle: 'RAV' }, 2),
+    cand({ id: 'c20', nr: 'K-1020', anrede: 'Frau', vorname: 'Selin', nachname: 'Aydin', email: 'selin.aydin@outlook.com', telefon: '+41 77 410 20 31', geburtsdatum: '1998-09-03', strasse: 'Obergrundstrasse 3', plz: '6003', ort: 'Luzern',
+      beruf: 'ICT-Supporterin', ausbildung: 'Informatikerin EFZ Plattformentwicklung', erfahrungJahre: 4, skills: ['1st/2nd Level Support', 'Microsoft 365', 'Active Directory', 'Intune'],
+      sprachen: [{ sprache: 'Deutsch', niveau: 'Muttersprache' }, { sprache: 'Türkisch', niveau: 'Muttersprache' }, { sprache: 'Englisch', niveau: 'B2' }], verfuegbarAb: d(21), anstellungsarten: ['Festanstellung', 'Try & Hire'], lohnvorstellung: 74000,
+      quelle: 'Website', status: 'Neu' }, 1),
   ];
 
   const comp = (p: Partial<Company> & Pick<Company, 'id' | 'nr' | 'name'>, created: number): Company => ({
@@ -311,6 +327,6 @@ export function createSeed(today: string = todayISO()): CrmData {
     users, candidates, companies, jobs, placements, assignments, timesheets, invoices, activities,
     audit: [{ id: 'log0', ts: `${today}T07:00`, userId: 'u1', entity: 'system', entityId: '', text: 'Demo-Daten geladen' }],
     settings,
-    counters: { K: 1016, F: 2009, V: 3010, E: 4004, R: rNr },
+    counters: { K: 1020, F: 2009, V: 3010, E: 4004, R: rNr },
   };
 }

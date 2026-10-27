@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Briefcase, Building2, CalendarCheck, CalendarClock, Clock, Copy, Handshake, Mail, MapPin, Pencil, Plus, Receipt, Sparkles, Trash2, UserRound } from 'lucide-react';
 import type { Job, Phase, Placement } from '@/types';
 import { PHASES } from '@/types';
-import { fmtCHF, fmtDate, fmtRelative, fullName } from '@/domain/format';
+import { fmtAvailability, fmtCHF, fmtDate, fmtRelative, fullName } from '@/domain/format';
 import { rankCandidates } from '@/domain/matching';
 import { inseratTemplate } from '@/domain/templates';
 import { aiRankCandidates, generateText, type AiMatch } from '@/lib/ai';
@@ -301,6 +301,8 @@ function PipelineTab({ job, placements, onPropose }: { job: Job; placements: Pla
 }
 
 /* ---------- Matching ---------- */
+const MIN_MATCH_SCORE = 40;
+
 function MatchingTab({ job }: { job: Job }) {
   const candidates = useData((s) => s.candidates);
   const placements = useData((s) => s.placements);
@@ -308,6 +310,7 @@ function MatchingTab({ job }: { job: Job }) {
   const l = useLookups();
   const [ai, setAi] = useState<{ results: AiMatch[]; source: 'ki' | 'lokal' } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showWeak, setShowWeak] = useState(false);
   const local = useMemo(() => rankCandidates(job, candidates, placements, 15), [job, candidates, placements]);
   const inProcess = useMemo(() => new Set(placements.filter((p) => p.jobId === job.id && p.phase !== 'Absage').map((p) => p.candidateId)), [placements, job.id]);
 
@@ -326,9 +329,11 @@ function MatchingTab({ job }: { job: Job }) {
     toast.success(`${fullName(l.candidate.get(candidateId))} vorgeschlagen`);
   };
 
-  const rows = ai
+  const allRows = ai
     ? ai.results.map((r) => ({ candidateId: r.candidateId, score: r.score, text: r.begruendung, plus: r.staerken, minus: r.luecken }))
     : local.map((m) => ({ candidateId: m.candidateId, score: m.score, text: m.reasons.join(' · '), plus: m.matched, minus: m.missing }));
+  const weakCount = allRows.filter((r) => r.score < MIN_MATCH_SCORE).length;
+  const rows = showWeak ? allRows : allRows.filter((r) => r.score >= MIN_MATCH_SCORE);
 
   return (
     <Card>
@@ -358,7 +363,7 @@ function MatchingTab({ job }: { job: Job }) {
               <li key={r.candidateId} className="flex flex-wrap items-center gap-4 px-5 py-3.5">
                 <Link to={`/kandidaten/${c.id}`} className="flex min-w-[220px] items-center gap-2.5 hover:text-brand">
                   <Avatar name={fullName(c)} size={36} />
-                  <CellStack main={fullName(c)} sub={`${c.beruf} · ${c.ort}${c.verfuegbarAb ? ` · verfügbar ${fmtRelative(c.verfuegbarAb).toLowerCase()}` : ''}`} />
+                  <CellStack main={fullName(c)} sub={`${c.beruf} · ${c.ort}${c.verfuegbarAb ? ` · verfügbar ${fmtAvailability(c.verfuegbarAb)}` : ''}`} />
                 </Link>
                 <div className="min-w-[220px] flex-1">
                   <div className="mb-1 flex flex-wrap gap-1">
@@ -388,7 +393,14 @@ function MatchingTab({ job }: { job: Job }) {
           })}
         </ul>
       ) : (
-        <EmptyState icon={<UserRound size={22} />} title="Keine passenden Kandidaten" text="Alle aktiven Kandidaten sind bereits im Prozess oder es fehlen Kandidaten mit passendem Profil." />
+        <EmptyState icon={<UserRound size={22} />} title="Keine gut passenden Kandidaten" text="Alle passenden Kandidaten sind bereits im Prozess oder es fehlen Profile mit diesen Anforderungen. Tipp: Inserat erstellen und publizieren." />
+      )}
+      {weakCount > 0 && (
+        <div className="border-t border-line px-5 py-2.5 text-center">
+          <Button size="sm" variant="ghost" onClick={() => setShowWeak((v) => !v)}>
+            {showWeak ? 'Schwache Treffer ausblenden' : `${weakCount} schwache Treffer (unter ${MIN_MATCH_SCORE} %) anzeigen`}
+          </Button>
+        </div>
       )}
     </Card>
   );

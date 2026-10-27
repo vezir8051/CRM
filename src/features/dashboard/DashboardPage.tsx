@@ -54,14 +54,12 @@ export default function DashboardPage() {
   const overdue = offen.filter((i) => isInvoiceOverdue(i, today));
   const umsatzMonat = revenue[revenue.length - 1]?.total ?? 0;
 
-  const myTasks = useMemo(
-    () =>
-      activities
-        .filter((a) => !a.erledigt && a.faelligAm && a.faelligAm.slice(0, 10) <= today && (!me || a.userId === me.id))
-        .sort((x, y) => x.faelligAm.localeCompare(y.faelligAm))
-        .slice(0, 6),
-    [activities, today, me],
-  );
+  // Eigene fällige Aufgaben; sind keine offen, die des Teams
+  const tasks = useMemo(() => {
+    const due = activities.filter((a) => !a.erledigt && a.faelligAm && a.faelligAm.slice(0, 10) <= today).sort((x, y) => x.faelligAm.localeCompare(y.faelligAm));
+    const own = due.filter((a) => a.userId === me?.id);
+    return { list: (own.length ? own : due).slice(0, 6), team: !own.length && due.length > 0 };
+  }, [activities, today, me]);
   const newest = useMemo(() => [...candidates].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5), [candidates]);
   const urgentJobs = useMemo(
     () =>
@@ -135,14 +133,14 @@ export default function DashboardPage() {
         <div className="space-y-5">
           <Card>
             <CardHeader
-              title="Meine Aufgaben heute"
+              title={tasks.team ? 'Fällige Aufgaben im Team' : 'Meine Aufgaben heute'}
               icon={<CalendarCheck size={17} className="text-brand" />}
               actions={<ButtonLink size="sm" variant="ghost" to="/aktivitaeten">Alle <ArrowRight size={13} /></ButtonLink>}
             />
             <CardBody className="py-0">
-              {myTasks.length ? (
+              {tasks.list.length ? (
                 <ul className="divide-y divide-line">
-                  {myTasks.map((a) => (
+                  {tasks.list.map((a) => (
                     <ActivityRow key={a.id} a={a} showBezug compact />
                   ))}
                 </ul>

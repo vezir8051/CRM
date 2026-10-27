@@ -30,7 +30,7 @@ const LANGUAGES = ['Deutsch', 'Englisch', 'Französisch', 'Italienisch', 'Spanis
 const LEVEL_PATTERN = '(muttersprache|c2|c1|b2|b1|a2|a1|fliessend|fließend|verhandlungssicher|sehr gut|gut|grundkenntnisse)';
 
 export const CANDIDATE_IMPORT_FIELDS = [
-  'anrede', 'vorname', 'nachname', 'geburtsdatum', 'email', 'telefon', 'strasse', 'plz', 'ort',
+  'anrede', 'vorname', 'nachname', 'geburtsdatum', 'email', 'telefon', 'strasse', 'plz', 'ort', 'nationalitaet', 'bewilligung',
   'beruf', 'ausbildung', 'erfahrungJahre', 'skills', 'sprachen', 'verfuegbarAb', 'pensum',
 ] as const;
 
